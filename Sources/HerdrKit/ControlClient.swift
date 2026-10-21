@@ -1,14 +1,19 @@
 import Foundation
 
-/// bigtty's own control socket, which `btty` (and agents) use to drive
+/// Orbyt's own control socket, which `obt` (and agents) use to drive
 /// the app: browser panes, file views, notifications. Same framing as
 /// herdr's API: one NDJSON request, one NDJSON response.
 public enum BigttyControl {
-    /// `BIGTTY_SOCKET`, else `~/Library/Application Support/bigtty/control.sock`.
+    /// `~/Library/Application Support/Orbyt`: the socket, pane state, extensions.
+    public static var supportFolder: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Orbyt", isDirectory: true)
+    }
+
+    /// `BIGTTY_SOCKET`, else `control.sock` in the support folder.
     public static var socketPath: String {
         if let path = ProcessInfo.processInfo.environment["BIGTTY_SOCKET"], !path.isEmpty { return path }
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return support.appendingPathComponent("bigtty/control.sock").path
+        return supportFolder.appendingPathComponent("control.sock").path
     }
 }
 
@@ -27,7 +32,7 @@ public struct ControlClient: Sendable {
         defer { socket.close() }
         let request: JSONValue = ["id": "1", "method": .string(method), "params": .object(params)]
         try socket.writeLine(JSONEncoder().encode(request))
-        guard let line = try socket.readLine() else { throw HerdrError.io("bigtty closed the connection") }
+        guard let line = try socket.readLine() else { throw HerdrError.io("Orbyt closed the connection") }
         let reply = try JSONDecoder().decode(JSONValue.self, from: line)
         if let error = reply["error"] {
             throw HerdrError.server(

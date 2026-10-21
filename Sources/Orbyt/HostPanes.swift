@@ -1,0 +1,305 @@
+import AppKit
+import HerdrKit
+
+/// Browser and file panes are real herdr panes, so herdr's layout stays the
+/// single source of truth: split, move, zoom and resize work on them like
+/// on any terminal. Each one runs `obt pane-host` and is tagged with
+/// `tokens.btty_kind` / `tokens.btty_id`; what it shows lives here, keyed by
+/// that id.
+enum HostPaneKind: String, Codable {
+    case browser, files, diff
+}
+
+struct HostPaneState: Codable, Equatable {
+    var kind: HostPaneKind
+    var url: String?
+    var title: String?
+    /// Root folder (or file) for files/diff panes.
+    var path: String?
+    /// The file shown in a files pane, and its mode ("files" or "changes").
+    var selection: String?
+    var mode: String?
+    /// Whether the files pane shows its tree; unset: only when opened on a
+    /// folder (a file opens on its own, full width).
+    var showsTree: Bool?
+    /// A browser pane is playing sound (shown on the tab and pane title).
+    var audible: Bool?
+    /// A line to reveal once (from `obt open file:line`); not persisted meaningfully.
+    var line: Int?
+    /// The herdr pane last seen hosting it, to re-tag after a server restart.
+    var paneID: String?
+    /// The machine it belongs to; `nil` is this Mac. Browser panes on a
+    /// remote machine reach its `localhost` through the SSH tunnel.
+    var machine: String?
+}
+
+extension HostPaneState {
+    /// herdr tags for the pane: what it is and what it shows, so any Orbyt
+    /// that connects (another Mac, a fresh install) can show it too.
+    func tokens(id: String) -> [String: String?] {
+        var tokens: [String: String?] = ["btty_kind": kind.rawValue, "btty_id": id]
+        if kind == .browser {
+            Self.write("btty_url", url, into: &tokens)
+        } else {
+            Self.write("btty_path", path, into: &tokens)
+            Self.write("btty_selection", selection, into: &tokens)
+            if let mode { tokens["btty_mode"] = mode }
+        }
+        return tokens
+    }
+
+    /// A pane this Mac has no record of, from its herdr tags.
+    init(kind: HostPaneKind, tokens: [String: String]?) {
+        self.init(kind: kind)
+        url = Self.read("btty_url", from: tokens)
+        path = Self.read("btty_path", from: tokens)
+        selection = Self.read("btty_selection", from: tokens)
+        mode = tokens?["btty_mode"]
+    }
+
+    /// herdr keeps only the first 80 characters of a tag's value, so a long
+    /// one (a deep path, a long URL) goes over several: `btty_path`, then
+    /// `btty_path_2`, `btty_path_3`… The tag after the last is cleared, which
+    /// ends it even where a longer value left more behind.
+    nonisolated static let tagLimit = 80
+    private nonisolated static let maxParts = 32
+
+    nonisolated static func write(_ key: String, _ value: String?, into tokens: inout [String: String?]) {
+        guard let value else { return }
+        let scalars = Array(value.unicodeScalars)
+        var parts: [String] = []
+        var start = 0
+        repeat {
+            let end = min(start + tagLimit, scalars.count)
+            var part = String.UnicodeScalarView()
+            part.append(contentsOf: scalars[start..<end])
+            parts.append(String(part))
+            start = end
+        } while start < scalars.count && parts.count < maxParts
+        for (i, part) in parts.enumerated() { tokens[i == 0 ? key : "\(key)_\(i + 1)"] = part }
+        tokens.updateValue(nil, forKey: "\(key)_\(parts.count + 1)")
+    }
+
+    nonisolated static func read(_ key: String, from tokens: [String: String]?) -> String? {
+        guard let tokens, var value = tokens[key] else { return nil }
+        var i = 2
+        while i <= maxParts, let part = tokens["\(key)_\(i)"] {
+            value += part
+            i += 1
+        }
+        return value
+    }
+}
+
+extension Pane {
+    var hostKind: HostPaneKind? { tokens?["btty_kind"].flatMap(HostPaneKind.init(rawValue:)) }
+    var hostID: String? { tokens?["btty_id"] }
+}
+
+@MainActor
+final class HostPaneStore {
+    static let shared = HostPaneStore()
+
+    private(set) var states: [String: HostPaneState] = [:]
+    private let fileURL: URL
+    private var saveScheduled = false
+
+    private init() {
+        let dir = BigttyControl.supportFolder
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        fileURL = dir.appendingPathComponent("panes.json")
+        if let data = try? Data(contentsOf: fileURL),
+           let decoded = try? JSONDecoder().decode([String: HostPaneState].self, from: data)
+        {
+            states = decoded
+        }
+    }
+
+    subscript(id: String) -> HostPaneState? {
+        get { states[id] }
+        set {
+            guard states[id] != newValue else { return }
+            states[id] = newValue
+            scheduleSave()
+        }
+    }
+
+    /// Drops state for host panes herdr no longer has. State that was never
+    /// attached to a pane is kept: its split may still be in flight.
+    func prune(keeping liveIDs: Set<String>, connectedMachines: Set<String> = ["local"]) {
+        let before = states.count
+        // A machine that isn't connected yet can't vouch for its panes: keep them.
+        states = states.filter {
+            liveIDs.contains($0.key) || $0.value.paneID == nil || !connectedMachines.contains($0.value.machine ?? "local")
+        }
+        if states.count != before { scheduleSave() }
+    }
+
+    private func scheduleSave() {
+        guard !saveScheduled else { return }
+        saveScheduled = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self else { return }
+            self.saveScheduled = false
+            if let data = try? JSONEncoder().encode(self.states) {
+                try? data.write(to: self.fileURL, options: .atomic)
+            }
+        }
+    }
+
+    nonisolated static func newID(_ kind: HostPaneKind) -> String {
+        "\(kind.rawValue.prefix(1))\(UUID().uuidString.prefix(8).lowercased())"
+    }
+
+    /// The `obt` binary shipped next to the app's executable.
+    static var obtPath: String {
+        Bundle.main.executableURL!.deletingLastPathComponent().appendingPathComponent("obt").path
+    }
+
+    /// Splits `target` and turns the new pane into a host pane. Returns
+    /// the host id at once; the herdr pane appears shortly after.
+    @discardableResult
+    static func open(
+        _ state: HostPaneState, beside target: String, direction: SplitDirection,
+        store: SessionStore, remote: Bool = false, onPane: (@MainActor (String) -> Void)? = nil
+    ) -> String {
+        let id = newID(state.kind)
+        shared[id] = state
+        let title = hostTitle(state)
+        store.perform { client in
+            let pane = try await client.split(paneID: target, direction: direction)
+            try await tag(pane: pane.paneID, id: id, kind: state.kind, title: title, client: client, remote: remote)
+            await MainActor.run { onPane?(pane.paneID) }
+        }
+        return id
+    }
+
+    /// Turns an existing pane (idle at its shell) into a host pane.
+    @discardableResult
+    static func convert(_ paneID: String, to state: HostPaneState, store: SessionStore, remote: Bool = false) -> String {
+        let id = newID(state.kind)
+        var recorded = state
+        recorded.paneID = paneID
+        shared[id] = recorded
+        let title = hostTitle(state)
+        let kind = state.kind
+        store.perform { client in
+            try await tag(pane: paneID, id: id, kind: kind, title: title, client: client, remote: remote)
+        }
+        return id
+    }
+
+    /// A new tab in `workspaceID` whose pane is a host pane.
+    @discardableResult
+    static func openTab(_ state: HostPaneState, in workspaceID: String, store: SessionStore, remote: Bool = false) -> String {
+        let id = newID(state.kind)
+        shared[id] = state
+        let title = hostTitle(state)
+        store.perform { client in
+            let pane = try await client.createTab(in: workspaceID)
+            await MainActor.run { shared[id]?.paneID = pane.paneID }
+            try await tag(pane: pane.paneID, id: id, kind: state.kind, title: title, client: client, remote: remote)
+        }
+        return id
+    }
+
+    /// Shells that are safe to replace with a host pane's placeholder.
+    static let shells: Set<String> = ["zsh", "bash", "fish", "sh", "dash", "ksh", "tcsh", "nu", "-zsh", "-bash", "-fish", "-sh"]
+
+    static func tag(pane: String, id: String, kind: HostPaneKind, title: String, client: HerdrClient, remote: Bool = false) async throws {
+        let state = await MainActor.run { shared[id] } ?? HostPaneState(kind: kind)
+        try await client.reportMetadata(paneID: pane, title: title, tokens: state.tokens(id: id))
+        let command: String
+        if remote {
+            // No obt on the other machine: a plain sh placeholder does the same job.
+            // The address or folder goes on its own line, so an Orbyt that
+            // finds the pane untagged can read back what it showed.
+            let shows = (state.kind == .browser ? state.url : state.path).map { "\\n  \($0)" } ?? ""
+            let banner = "\\033[2J\\033[H\\n  Orbyt \(kind.rawValue) pane\\n  \(title)\(shows)\\n\\n  Open this workspace in Orbyt to see it.\\n"
+                .replacingOccurrences(of: "'", with: "").replacingOccurrences(of: "%", with: "%%")
+            command = "sh -c " + shellQuote("printf '\(banner)'; stty -echo -icanon 2>/dev/null; exec cat >/dev/null")
+        } else {
+            command = [obtPath, "pane-host", kind.rawValue, id, title].map(shellQuote).joined(separator: " ")
+        }
+        try await client.sendText(paneID: pane, text: "exec \(command)\r")
+    }
+
+    /// herdr drops pane tags on a restart or live handoff while the pane's
+    /// placeholder keeps running. Untagged panes are checked once: one
+    /// running `obt pane-host <kind> <id>`, or, remotely, our placeholder in
+    /// a pane we recorded, or showing our placeholder's text, gets its tags
+    /// back.
+    private static var checkedPanes: Set<String> = []
+
+    static func restoreTags(store: SessionStore, remote: Bool) {
+        let untagged = store.snapshot.panes.filter { $0.hostID == nil }
+        let key: (Pane) -> String = { "\(store.client.endpoint.socketPath)|\($0.paneID)|\($0.terminalID)" }
+        let pending = untagged.filter { !checkedPanes.contains(key($0)) }
+        guard !pending.isEmpty else { return }
+        for pane in pending { checkedPanes.insert(key(pane)) }
+        let recorded = Dictionary(shared.states.compactMap { id, state in state.paneID.map { ($0, (id, state)) } }, uniquingKeysWith: { a, _ in a })
+        store.perform { client in
+            for pane in pending {
+                let info = try? await client.call("pane.process_info", ["pane_id": .string(pane.paneID)])
+                guard case let .array(processes)? = info?["process_info"]?["foreground_processes"] else { continue }
+                for process in processes {
+                    guard case let .array(argv)? = process["argv"] else { continue }
+                    let args = argv.compactMap(\.stringValue)
+                    var tag: (id: String, kind: HostPaneKind)?
+                    if let at = args.firstIndex(of: "pane-host"), args.count > at + 2, let kind = HostPaneKind(rawValue: args[at + 1]) {
+                        tag = (args[at + 2], kind)
+                    } else if remote, args.first.map({ ($0 as NSString).lastPathComponent == "cat" }) == true {
+                        if let (id, state) = recorded[pane.paneID] {
+                            tag = (id, state.kind)
+                        } else if let text = try? await client.readPane(pane.paneID, lines: 12),
+                                  let found = placeholder(in: text) {
+                            // Made by another Mac, or forgotten here: start it
+                            // again from what the placeholder says it showed.
+                            let id = newID(found.kind)
+                            await MainActor.run { shared[id] = found }
+                            tag = (id, found.kind)
+                        }
+                    }
+                    guard let tag else { continue }
+                    let state = await MainActor.run { shared[tag.id] } ?? HostPaneState(kind: tag.kind)
+                    try await client.reportMetadata(paneID: pane.paneID, title: hostTitle(state),
+                                                    tokens: state.tokens(id: tag.id))
+                    break
+                }
+            }
+        }
+    }
+
+    /// What a remote placeholder's text says the pane is: "Orbyt browser
+    /// pane" and its address (or a files pane and its folder). Placeholders
+    /// written before the rename say "bigtty" instead.
+    nonisolated static func placeholder(in text: String) -> HostPaneState? {
+        let lines = text.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
+        let prefixes = ["Orbyt ", "bigtty "]
+        guard let head = lines.first(where: { line in line.hasSuffix(" pane") && prefixes.contains { line.hasPrefix($0) } }),
+              let prefix = prefixes.first(where: { head.hasPrefix($0) }),
+              let kind = HostPaneKind(rawValue: String(head.dropFirst(prefix.count).dropLast(" pane".count)))
+        else { return nil }
+        var state = HostPaneState(kind: kind)
+        if kind == .browser {
+            state.url = lines.first { $0.hasPrefix("http://") || $0.hasPrefix("https://") }
+        } else {
+            state.path = lines.first { $0.hasPrefix("/") || $0.hasPrefix("~") }
+            state.mode = kind == .diff ? "changes" : nil
+        }
+        return state
+    }
+
+    static func hostTitle(_ state: HostPaneState) -> String {
+        switch state.kind {
+        case .browser: (state.audible == true ? "🔊 " : "🌐 ") + (state.title ?? state.url ?? "Browser")
+        case .files, .diff:
+            (state.mode == "changes" || (state.mode == nil && state.kind == .diff) ? "± " : "📁 ")
+                + ((state.selection ?? state.path).map { ($0 as NSString).lastPathComponent } ?? "Files")
+        }
+    }
+
+    private static func shellQuote(_ s: String) -> String {
+        "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+}

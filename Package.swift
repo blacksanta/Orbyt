@@ -2,11 +2,11 @@
 import PackageDescription
 
 let package = Package(
-    name: "bigtty",
+    name: "Orbyt",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "bigtty", targets: ["bigtty"]),
-        .executable(name: "btty", targets: ["btty"]),
+        .executable(name: "Orbyt", targets: ["Orbyt"]),
+        .executable(name: "obt", targets: ["obt"]),
         .library(name: "HerdrKit", targets: ["HerdrKit"]),
     ],
     dependencies: [
@@ -15,7 +15,7 @@ let package = Package(
     targets: [
         .target(name: "HerdrKit"),
         .executableTarget(
-            name: "bigtty",
+            name: "Orbyt",
             dependencies: [
                 "HerdrKit",
                 .product(name: "GhosttyTerminal", package: "libghostty-spm"),
@@ -24,8 +24,8 @@ let package = Package(
             // `theme = <name>` in the user's Ghostty config.
             resources: [.copy("Resources/ghostty-themes")]
         ),
-        .executableTarget(name: "btty", dependencies: ["HerdrKit"]),
+        .executableTarget(name: "obt", dependencies: ["HerdrKit"]),
         .testTarget(name: "HerdrKitTests", dependencies: ["HerdrKit"]),
-        .testTarget(name: "bigttyTests", dependencies: ["bigtty"]),
+        .testTarget(name: "OrbytTests", dependencies: ["Orbyt"]),
     ]
 )

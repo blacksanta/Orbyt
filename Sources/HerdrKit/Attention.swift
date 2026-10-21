@@ -7,7 +7,7 @@ import Foundation
 /// are ours: a pane counts as seen when it is visible and focused in the key
 /// window (`viewed`). A blocked pane that was seen stays quiet until it
 /// stops being blocked and gets blocked again. A program in a pane can also
-/// ask for the user (`btty notify`, a desktop-notification escape): that
+/// ask for the user (`obt notify`, a desktop-notification escape): that
 /// message waits like a finish does, until the pane is looked at.
 public struct Attention: Sendable, Equatable {
     public enum Reason: String, Sendable { case blocked, notified, done }

@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="Resources/AppIcon.png" width="128" alt="bigtty icon">
+  <img src="Resources/AppIcon.png" width="128" alt="Orbyt icon">
 </p>
 
-<h1 align="center">bigtty</h1>
+<h1 align="center">Orbyt</h1>
 
 <p align="center"><b>A native Mac home for your terminal agents.</b></p>
 
@@ -10,7 +10,7 @@
   <a href="#install"><b>Install</b></a> ·
   <a href="docs/features.md">Features</a> ·
   <a href="docs/shortcuts.md">Shortcuts</a> ·
-  <a href="docs/btty.md">btty</a>
+  <a href="docs/obt.md">obt</a>
 </p>
 
 <p align="center">
@@ -20,10 +20,10 @@
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license">
 </p>
 
-![bigtty: spaces in the sidebar, tests, a live dashboard, server logs and code side by side](docs/screenshots/workspace.png)
+![Orbyt: spaces in the sidebar, tests, a live dashboard, server logs and code side by side](docs/screenshots/workspace.png)
 
 Claude Code, Codex and friends run in [herdr](https://herdr.dev) because it
-keeps them alive. **bigtty** gives that herd a proper Mac app: every space in a
+keeps them alive. **Orbyt** gives that herd a proper Mac app: every space in a
 sidebar, every agent's state at a glance, real Ghostty terminals, and a
 browser and your code right next to the agent that needs them. Quit it and
 nothing stops; herdr keeps running everything.
@@ -58,7 +58,7 @@ your terminals printed.
 
 Browser panes split, zoom and move like terminals. Open `localhost` beside the
 dev server, block ads with uBlock Origin Lite, let agents drive it with
-[`btty browser`](docs/btty.md), or keep a Short playing while the agents grind.
+[`obt browser`](docs/obt.md), or keep a Short playing while the agents grind.
 
 ![Two agents working beside a YouTube Short filling a tall browser pane](docs/screenshots/brainrot.png)
 
@@ -95,12 +95,16 @@ Needs **macOS 14+** and **[herdr](https://herdr.dev) 0.9.2+**. Universal
 (Apple Silicon and Intel).
 
 ```sh
-brew install --cask v1k45/tap/bigtty
+brew install --cask blacksanta/tap/orbyt
 ```
 
-That also puts `btty` on your `PATH`. Open bigtty and it finds herdr and
+That also puts `obt` on your `PATH`. Open Orbyt and it finds herdr and
 connects to your default session. To update:
-`brew update && brew upgrade --cask bigtty`.
+`brew update && brew upgrade --cask orbyt`.
+
+Coming from bigtty? Orbyt picks up its settings, saved machines, panes and
+extensions on first launch. Browser logins and the notification permission
+start fresh, and **Install obt and Agent Skill…** replaces the old `btty`.
 
 ## Quick start
 
@@ -119,11 +123,11 @@ Drag a pane by the handle on its top edge to rearrange. Everything else:
 
 - [Features in depth](docs/features.md): terminals, spaces, attention, browser
   panes and extensions, files, sessions, remote machines, how it works
-- [btty](docs/btty.md): the command agents use to drive bigtty's browser and
+- [obt](docs/obt.md): the command agents use to drive Orbyt's browser and
   open files
 - [Building and development](docs/development.md)
 
 Built on [herdr](https://herdr.dev), [Ghostty](https://ghostty.org) via
 [libghostty-spm](https://github.com/Lakr233/libghostty-spm), and themes from
 [iTerm2-Color-Schemes](https://github.com/mbadolato/iTerm2-Color-Schemes).
-MIT licensed.
+A fork of [bigtty](https://github.com/v1k45/bigtty). MIT licensed.
