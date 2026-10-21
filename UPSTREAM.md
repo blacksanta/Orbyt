@@ -1,6 +1,6 @@
 # Upstream notes
 
-Changes bigtty would like from herdr. Not filed yet: we're finishing the
+Changes Orbyt would like from herdr. Not filed yet: we're finishing the
 app first.
 
 ## Inline images in terminal panes (kitty graphics)
@@ -8,7 +8,7 @@ app first.
 herdr already sends kitty-graphics images to terminal clients as raw bytes
 (`ServerMessage::Graphics { bytes }`, "to write directly to the host
 terminal"), and Ghostty draws them natively. Two things stop them reaching
-bigtty:
+Orbyt:
 
 1. `herdr terminal session control` drops them:
    `src/client/terminal_sessions.rs`, `write_terminal_session_output`:
@@ -17,10 +17,10 @@ bigtty:
    with `terminal.frame` records.
 2. The session client says hello with a 0×0 cell size, so herdr can't place
    images. Proposed: take cell pixels from `terminal.resize`
-   (`cell_width_px` / `cell_height_px`, which bigtty already sends) or a
+   (`cell_width_px` / `cell_height_px`, which Orbyt already sends) or a
    `--cell-size WxH` flag.
 
-bigtty side, once available: feed `terminal.graphics` bytes into the
+Orbyt side, once available: feed `terminal.graphics` bytes into the
 surface (`InMemoryTerminalSession.receive`) in stream order.
 
 ## Other gaps noticed
@@ -33,12 +33,12 @@ surface (`InMemoryTerminalSession.receive`) in stream order.
 
 ## Sticky (pinned) panes
 
-bigtty pins a pane by moving it into every tab you switch to (`pane.move`,
+Orbyt pins a pane by moving it into every tab you switch to (`pane.move`,
 then a rebuild by moves for a full-height column). It works, but each switch
 reflows the destination tab, and two clients on different spaces pull the
 pane back and forth. Native support would be: a pane flagged sticky that
 herdr's layout keeps in every tab's right column (one process, one size),
-with an API to set it and its width, and an event when it changes. bigtty
+with an API to set it and its width, and an event when it changes. Orbyt
 would then just draw herdr's layout.
 
 Found while building it (herdr 0.9.3):

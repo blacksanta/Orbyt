@@ -191,7 +191,7 @@ public final class SessionStore {
             do {
                 try await action(client)
             } catch {
-                NSLog("bigtty: herdr call failed: \(error)")
+                NSLog("Orbyt: herdr call failed: \(error)")
             }
             scheduleRefresh()
         }

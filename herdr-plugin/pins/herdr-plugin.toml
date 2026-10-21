@@ -1,8 +1,8 @@
 id = "bigtty.pins"
-name = "bigtty pins"
+name = "Orbyt pins"
 version = "0.2.0"
 min_herdr_version = "0.9.2"
-description = "Panes pinned in bigtty follow you between spaces in herdr's terminal UI too."
+description = "Panes pinned in Orbyt follow you between spaces in herdr's terminal UI too."
 platforms = ["linux", "macos"]
 
 [[events]]

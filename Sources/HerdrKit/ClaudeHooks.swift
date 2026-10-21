@@ -1,15 +1,15 @@
 import Foundation
 
 /// The Claude Code hook that sends Claude's notifications (its
-/// PushNotification tool) to bigtty: `btty hooks install claude`.
+/// PushNotification tool) to Orbyt: `obt hooks install claude`.
 ///
 /// Claude Code writes a terminal notification only for terminals it knows,
 /// and herdr redraws panes rather than passing escapes through, so they
-/// never reach bigtty. Its `Notification` hook runs either way; this one
-/// calls `btty notify --claude-hook`, which puts the message on Needs You.
+/// never reach Orbyt. Its `Notification` hook runs either way; this one
+/// calls `obt notify --claude-hook`, which puts the message on Needs You.
 ///
 /// Edits to settings.json are merges: other hooks and settings stay as
-/// they are, and only entries running `btty notify --claude-hook` count
+/// they are, and only entries running `obt notify --claude-hook` count
 /// as ours.
 public enum ClaudeHooks {
     public static let event = "Notification"
@@ -18,8 +18,8 @@ public enum ClaudeHooks {
     public static let matcher = "push_notification"
     static let marker = "notify --claude-hook"
 
-    /// The hook's command, running the `btty` at `path`.
-    public static func command(btty path: String) -> String {
+    /// The hook's command, running the `obt` at `path`.
+    public static func command(obt path: String) -> String {
         "'\(path.replacingOccurrences(of: "'", with: "'\\''"))' \(marker)"
     }
 
@@ -141,11 +141,11 @@ public enum ClaudeHooks {
             stamp.locale = Locale(identifier: "en_US_POSIX")
             stamp.dateFormat = "yyyyMMdd-HHmmss"
             var candidate = target.deletingLastPathComponent()
-                .appendingPathComponent("\(target.lastPathComponent).bigtty-backup-\(stamp.string(from: now))")
+                .appendingPathComponent("\(target.lastPathComponent).orbyt-backup-\(stamp.string(from: now))")
             var n = 2
             while fm.fileExists(atPath: candidate.path) {
                 candidate = target.deletingLastPathComponent()
-                    .appendingPathComponent("\(target.lastPathComponent).bigtty-backup-\(stamp.string(from: now))-\(n)")
+                    .appendingPathComponent("\(target.lastPathComponent).orbyt-backup-\(stamp.string(from: now))-\(n)")
                 n += 1
             }
             // A copy keeps the file's permissions (it may hold tokens).

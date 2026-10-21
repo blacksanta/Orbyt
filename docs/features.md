@@ -9,7 +9,7 @@ picks a theme (curated light/dark pairs or any of Ghostty's collection,
 bundled from [iTerm2-Color-Schemes](https://github.com/mbadolato/iTerm2-Color-Schemes)),
 font, size, background translucency, contrast boost and copy on select.
 `theme = Name` and `theme = light:A,dark:B` in your config just work.
-`BIGTTY_GHOSTTY_CONFIG=/path` keeps a separate config for bigtty.
+`BIGTTY_GHOSTTY_CONFIG=/path` keeps a separate config for Orbyt.
 
 Clicks, hover, scrolling and pastes reach apps like Claude Code, vim and htop
 the way they do in Ghostty. ⌘V with a screenshot on the clipboard pastes it as
@@ -30,7 +30,7 @@ servers and browser panes keep going where they land.
   spaces and their tabs, a new tab here or a new space in the palette.
 - **⌃⌥⌘1–9** sends the focused pane to space 1–9.
 
-bigtty follows the pane there; hold **⌥** while choosing or dropping to stay
+Orbyt follows the pane there; hold **⌥** while choosing or dropping to stay
 where you are. A tab or space the move leaves empty closes. Panes move within
 one machine (herdr can't carry a process to another).
 
@@ -49,7 +49,7 @@ settle; a zoomed tab is left alone.
 
 In herdr's terminal UI, pins stay where you last were, unless you add the
 [pins plugin](../herdr-plugin/pins/README.md) (`herdr plugin install
-v1k45/bigtty/herdr-plugin/pins`): then they follow you there too, and herdr
+blacksanta/Orbyt/herdr-plugin/pins`): then they follow you there too, and herdr
 gets a **Pin or unpin pane** action for its command palette or a key.
 
 ## Spaces
@@ -85,11 +85,11 @@ file viewer (⇧⌘E).
 
 ## Attention and notifications
 
-herdr reports each agent's state; bigtty turns it into a breathing dot while
+herdr reports each agent's state; Orbyt turns it into a breathing dot while
 an agent works, and when one needs you: a ring on the pane, a highlighted
 space with the agent's own question, a Dock badge, and a notification for
 panes you aren't looking at. **Settings ▸ General** picks the sound (or none);
-the Dock icon bounces when an agent needs you while bigtty is in the
+the Dock icon bounces when an agent needs you while Orbyt is in the
 background. Once you've seen it, it goes quiet until the agent needs you
 again.
 
@@ -98,7 +98,7 @@ across every machine and session, most urgent first: a machine whose login
 waits on you (a Tailscale approval, a sign-in), then agents asking something
 you haven't seen, agents still waiting on an answer (with their question),
 machines that can't be reached (once per host, however many of its sessions
-are down, and it stays put while bigtty retries; it retries at once when the
+are down, and it stays put while Orbyt retries; it retries at once when the
 network comes back or the Mac wakes), and agents that finished
 while you were away; within each, whatever has waited longest leads. Click one to go there;
 click the header to collapse it (the space cards still quote each question).
@@ -127,13 +127,13 @@ links open in the tab's browser pane or in your default browser (a setting).
 
 **Extensions.** Browser panes run Safari/Chrome MV3 web extensions (macOS
 15.4+). **Settings ▸ General ▸ Get uBlock Origin Lite** installs it; any other
-unpacked extension goes in `~/Library/Application Support/bigtty/Extensions`.
+unpacked extension goes in `~/Library/Application Support/Orbyt/Extensions`.
 
 ## Files and changes
 
-⌘-click a path, `btty open path:line`, or **⌥⌘F**: the file opens at the line,
+⌘-click a path, `obt open path:line`, or **⌥⌘F**: the file opens at the line,
 highlighted, with images and PDFs previewed; the tree is a click away. The
-Changes pane (**⌥⌘G**, `btty diff`) lists what git sees as changed with each
+Changes pane (**⌥⌘G**, `obt diff`) lists what git sees as changed with each
 diff, refreshed live. Right-click a file to insert its path into the terminal.
 
 ## Sessions
@@ -143,7 +143,7 @@ herdr sessions are independent servers, each with its own spaces. The
 switch, start a stopped session, create one, or stop and delete them. ⌘K
 lists sessions too, and finds spaces in all of them. Every running session
 stays connected in the background: its agents' questions badge the
-switcher, notify you and count in the Dock badge. `btty` commands from an
+switcher, notify you and count in the Dock badge. `obt` commands from an
 agent act in the agent's own session.
 
 Machines connected over SSH get the same switcher once they have more than
@@ -154,19 +154,19 @@ in the background too.
 ## Remote machines
 
 **File ▸ Connect Machine…** takes any SSH target (`user@host`, `host:port`, an
-`~/.ssh/config` alias). bigtty checks it, can start herdr there, and keeps
+`~/.ssh/config` alias). Orbyt checks it, can start herdr there, and keeps
 one SSH connection forwarding herdr's sockets, so everything works as it does
 locally: terminals, agents, attention, ⌘K, files panes, and browser panes that
 reach the machine's `localhost` (the address bar still says `localhost:3000`).
 It uses your SSH keys and agent; machines saved with `herdr machine add`
 appear on their own.
 
-**Passwords.** When keys aren't enough, bigtty asks in a dialog: a password,
+**Passwords.** When keys aren't enough, Orbyt asks in a dialog: a password,
 a key's passphrase, a one-time code, or whether to trust a machine's new host
 key. You're asked once per connection to a machine, not for each thing it
 opens, and **Remember in Keychain** keeps a password or passphrase for next
 time (codes are never stored). A wrong password asks again; cancel, and
-bigtty stops asking for that machine until you connect it again yourself,
+Orbyt stops asking for that machine until you connect it again yourself,
 so it never piles up dialogs while it retries in the background.
 
 ## How it works

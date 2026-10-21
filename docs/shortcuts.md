@@ -24,7 +24,7 @@
 | ⌘R | Reload the browser page, or the open file from disk |
 | ⌘V | Paste (an image pastes as a file the agent can attach) |
 | ⌘, | Settings |
-| Hold ⌘Q | Quit (a quick press only shows the hint, so a slip doesn't close bigtty) |
+| Hold ⌘Q | Quit (a quick press only shows the hint, so a slip doesn't close Orbyt) |
 
 The pane-number modifier (⌥ or ⌥⌘) is a setting.
 

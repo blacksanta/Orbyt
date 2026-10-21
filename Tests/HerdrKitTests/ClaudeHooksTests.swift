@@ -3,7 +3,7 @@ import Foundation
 import Testing
 
 @Suite struct ClaudeHooksTests {
-    let command = ClaudeHooks.command(btty: "/Applications/bigtty.app/Contents/MacOS/btty")
+    let command = ClaudeHooks.command(obt: "/Applications/Orbyt.app/Contents/MacOS/obt")
 
     func json(_ text: String) -> [String: Any] {
         (try? JSONSerialization.jsonObject(with: Data(text.utf8))) as? [String: Any] ?? [:]
@@ -14,7 +14,7 @@ import Testing
     }
 
     @Test func commandQuotesThePath() {
-        #expect(ClaudeHooks.command(btty: "/a b/it's/btty") == "'/a b/it'\\''s/btty' notify --claude-hook")
+        #expect(ClaudeHooks.command(obt: "/a b/it's/obt") == "'/a b/it'\\''s/obt' notify --claude-hook")
     }
 
     @Test func installsIntoEmptySettings() {
@@ -56,7 +56,7 @@ import Testing
     }
 
     @Test func aMovedAppUpdatesTheCommandInPlaceOfAddingOne() {
-        let old = ClaudeHooks.install([:], command: ClaudeHooks.command(btty: "/old/btty")).settings
+        let old = ClaudeHooks.install([:], command: ClaudeHooks.command(obt: "/old/obt")).settings
         let (updated, changed) = ClaudeHooks.install(old, command: command)
         #expect(changed)
         #expect(ClaudeHooks.installed(in: updated) == [command])
@@ -66,7 +66,7 @@ import Testing
     @Test func uninstallLeavesAGroupItSharesWithOtherHooks() {
         let settings = json("""
         {"hooks": {"Notification": [{"matcher": "push_notification", "hooks": [
-          {"type": "command", "command": "'/x/btty' notify --claude-hook"},
+          {"type": "command", "command": "'/x/obt' notify --claude-hook"},
           {"type": "command", "command": "logger hi"}]}]}}
         """)
         let (removed, changed) = ClaudeHooks.uninstall(settings)
@@ -130,7 +130,7 @@ import Testing
         #expect(json(try String(contentsOf: url, encoding: .utf8))["model"] as? String == "opus")
 
         #expect(try ClaudeHooks.update(url) { ClaudeHooks.install($0, command: command) } == .unchanged)
-        let backups = try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0.contains("bigtty-backup") }
+        let backups = try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0.contains("orbyt-backup") }
         #expect(backups.count == 1)
     }
 

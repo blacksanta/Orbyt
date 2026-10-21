@@ -1,4 +1,4 @@
-// Draws the bigtty app icon and writes an .icns.
+// Draws the Orbyt app icon and writes an .icns.
 //   swift scripts/make-icon.swift <out.icns>
 // One big terminal window in front of two smaller ones (the herd), on a
 // dark indigo squircle.
@@ -71,7 +71,7 @@ func draw(size: CGFloat) -> NSBitmapImageRep {
 }
 
 let out = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "AppIcon.icns"
-let iconset = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("bigtty.iconset")
+let iconset = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("Orbyt.iconset")
 try? FileManager.default.removeItem(at: iconset)
 try FileManager.default.createDirectory(at: iconset, withIntermediateDirectories: true)
 for base in [16, 32, 128, 256, 512] {

@@ -77,7 +77,7 @@ import Testing
         #expect(attention.count(inTab: "w1:t1", panes: later) == 2)
     }
 
-    // MARK: - Messages (btty notify)
+    // MARK: - Messages (obt notify)
 
     let note = Attention.Note(title: "Build", body: "tests passed")
 

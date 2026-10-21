@@ -1,9 +1,9 @@
 """Brings pinned panes to herdr's focused tab, as a column on the right;
 as an action ("Pin or unpin pane"), pins or unpins the focused pane.
 
-bigtty pins a pane by tagging it (pane tokens: btty_pin = its order,
-btty_pin_width = the column's share of the tab). bigtty moves pins itself
-when you switch spaces in bigtty; this does the same when you switch in
+Orbyt pins a pane by tagging it (pane tokens: btty_pin = its order,
+btty_pin_width = the column's share of the tab). Orbyt moves pins itself
+when you switch spaces in Orbyt; this does the same when you switch in
 herdr's terminal UI. Same rule, so the two agree: the pins go to the tab
 that's focused, the first beside the pane along the right edge (a
 full-height column when there is one), the rest stacked below it.
@@ -118,7 +118,7 @@ def sibling(node, pane_id):
 
 
 def toggle_pin(pane_id):
-    """Pins the pane (the same tokens bigtty writes, so either side sees
+    """Pins the pane (the same tokens Orbyt writes, so either side sees
     it), or unpins it and puts it back beside the pane it was next to."""
     snap = call("session.snapshot")["snapshot"]
     pane = next((p for p in snap["panes"] if p["pane_id"] == pane_id), None)

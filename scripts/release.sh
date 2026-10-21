@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Builds a distributable bigtty.app (Intel + Apple Silicon) and zips it.
-#   scripts/release.sh <version>   → build/release/bigtty-<version>.{dmg,zip}
+# Builds a distributable Orbyt.app (Intel + Apple Silicon) and zips it.
+#   scripts/release.sh <version>   → build/release/Orbyt-<version>.{dmg,zip}
 #
 # Built with xcodebuild rather than `swift build`: Xcode's resource lookup
 # for package resources checks the app's Contents/Resources, so the
@@ -17,17 +17,17 @@ out="build/release"
 
 # CLANG_COVERAGE_MAPPING=NO: xcodebuild otherwise instruments package
 # targets for coverage, and the app leaves default.profraw files behind.
-for scheme in bigtty btty; do
+for scheme in Orbyt obt; do
     xcodebuild -scheme "$scheme" -configuration Release -destination 'generic/platform=macOS' \
         -derivedDataPath "$derived" CLANG_COVERAGE_MAPPING=NO ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO build -quiet
 done
 products="$derived/Build/Products/Release"
 
-app="$out/bigtty.app"
+app="$out/Orbyt.app"
 rm -rf "$out"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-cp "$products/bigtty" "$app/Contents/MacOS/bigtty"
-cp "$products/btty" "$app/Contents/MacOS/btty"
+cp "$products/Orbyt" "$app/Contents/MacOS/Orbyt"
+cp "$products/obt" "$app/Contents/MacOS/obt"
 for bundle in "$products"/*.bundle; do
     cp -R "$bundle" "$app/Contents/Resources/"
 done
@@ -38,10 +38,10 @@ cat > "$app/Contents/Info.plist" <<PLIST
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleIdentifier</key><string>dev.bigtty.bigtty</string>
-    <key>CFBundleName</key><string>bigtty</string>
-    <key>CFBundleDisplayName</key><string>bigtty</string>
-    <key>CFBundleExecutable</key><string>bigtty</string>
+    <key>CFBundleIdentifier</key><string>dev.orbyt.orbyt</string>
+    <key>CFBundleName</key><string>Orbyt</string>
+    <key>CFBundleDisplayName</key><string>Orbyt</string>
+    <key>CFBundleExecutable</key><string>Orbyt</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>${version}</string>
@@ -55,11 +55,11 @@ cat > "$app/Contents/Info.plist" <<PLIST
 PLIST
 
 # Ad-hoc signed (no Developer ID): a stable identity for notifications.
-codesign --force --sign - --identifier dev.bigtty.btty "$app/Contents/MacOS/btty"
-codesign --force --sign - --identifier dev.bigtty.bigtty "$app"
+codesign --force --sign - --identifier dev.orbyt.obt "$app/Contents/MacOS/obt"
+codesign --force --sign - --identifier dev.orbyt.orbyt "$app"
 codesign --verify --strict "$app"
 
-zip="$out/bigtty-${version}.zip"
+zip="$out/Orbyt-${version}.zip"
 ditto -c -k --keepParent "$app" "$zip"
 
 # A disk image to drag the app into Applications from.
@@ -67,12 +67,12 @@ staging="$out/dmg"
 mkdir -p "$staging"
 cp -R "$app" "$staging/"
 ln -s /Applications "$staging/Applications"
-dmg="$out/bigtty-${version}.dmg"
-hdiutil create -volname "bigtty ${version}" -srcfolder "$staging" -fs HFS+ -format UDZO -ov "$dmg" -quiet
+dmg="$out/Orbyt-${version}.dmg"
+hdiutil create -volname "Orbyt ${version}" -srcfolder "$staging" -fs HFS+ -format UDZO -ov "$dmg" -quiet
 rm -rf "$staging"
 codesign --force --sign - "$dmg"
 
 echo "$zip"
 echo "$dmg"
-# For the Homebrew cask (github.com/v1k45/homebrew-tap, Casks/bigtty.rb).
+# For the Homebrew cask (github.com/blacksanta/homebrew-tap, Casks/orbyt.rb).
 echo "cask: version \"$version\", sha256 \"$(shasum -a 256 "$zip" | cut -d' ' -f1)\""

@@ -17,7 +17,7 @@ struct LiveServerTests {
     }
 
     @Test func splitShowsUpInLayout() async throws {
-        let root = try await client.createWorkspace(cwd: "/tmp", label: "btty-test", focus: false)
+        let root = try await client.createWorkspace(cwd: "/tmp", label: "obt-test", focus: false)
         let pane = try await client.split(paneID: root.paneID, direction: .right)
         let layout = try await client.layout(tabID: root.tabID)
         #expect(layout.root.paneIDs == [root.paneID, pane.paneID])
@@ -25,7 +25,7 @@ struct LiveServerTests {
     }
 
     @Test func terminalChannelEchoes() async throws {
-        let pane = try await client.createWorkspace(cwd: "/tmp", label: "btty-echo", focus: false)
+        let pane = try await client.createWorkspace(cwd: "/tmp", label: "obt-echo", focus: false)
 
         let channel = TerminalChannel(endpoint: client.endpoint, terminalID: pane.terminalID)
         let received = Received()
@@ -34,15 +34,15 @@ struct LiveServerTests {
         // Wait for the shell to draw something, then for our output.
         try await waitUntil { !received.text.isEmpty }
         try await Task.sleep(nanoseconds: 500_000_000)
-        channel.sendInput(Data("echo btty-marker-$((20+22))\r".utf8))
-        try await waitUntil { received.text.contains("btty-marker-42") }
+        channel.sendInput(Data("echo obt-marker-$((20+22))\r".utf8))
+        try await waitUntil { received.text.contains("obt-marker-42") }
         channel.close()
         try await client.closeWorkspace(pane.workspaceID)
-        #expect(received.text.contains("btty-marker-42"))
+        #expect(received.text.contains("obt-marker-42"))
     }
 
     @Test func searchesAndScrollsScrollback() async throws {
-        let pane = try await client.createWorkspace(cwd: "/tmp", label: "btty-find", focus: false)
+        let pane = try await client.createWorkspace(cwd: "/tmp", label: "obt-find", focus: false)
         // Keep a terminal attached so the pane has a size and a screen.
         let channel = TerminalChannel(endpoint: client.endpoint, terminalID: pane.terminalID)
         try channel.start(columns: 80, rows: 20)

@@ -9,7 +9,7 @@ public struct NeedsYouItem: Sendable, Equatable {
         case login
         /// An agent asks something you haven't looked at yet.
         case blocked
-        /// A program in a pane sent you a message (`btty notify`).
+        /// A program in a pane sent you a message (`obt notify`).
         case notified
         /// An agent still waits on you, though you've seen it.
         case waiting
